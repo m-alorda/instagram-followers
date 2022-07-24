@@ -1,5 +1,3 @@
-const username = prompt("Please, enter you Instagram name");
-
 const config = {
   followers: {
     hash: "c76146de99bb02f6415203be841dd25a",
@@ -21,8 +19,21 @@ const get_user_id = async (username) => {
       },
     }
   )
-    .then((res) => res.json())
-    .then((res) => res.data.user.id);
+    .then((res) => {
+      if (!res.ok) {
+        throw new Error("Unexpected network error");
+      }
+      return res.json();
+    })
+    .then((res) => {
+      const user_id = res.data.user.id;
+      console.log(`Found user id is ${user_id}`);
+      return user_id;
+    })
+    .catch(() => {
+      console.log("User id not found");
+      return null;
+    });
 };
 
 const get_list = async (list_config, user_id) => {
@@ -57,20 +68,33 @@ const get_list = async (list_config, user_id) => {
   return result_list;
 };
 
-const user_id = await get_user_id(username);
-console.log("Requesting followers");
-const followers_task = get_list(config.followers, user_id);
-console.log("Requesting following");
-const following_task = get_list(config.following, user_id);
+const prompt_valid_username = async () => {
+  let username = prompt("Please, enter your username");
+  while ((await get_user_id(username)) == null) {
+    username = prompt(
+      `The given username was not found (@${username}). Please, enter another one`
+    );
+  }
+  return username;
+};
 
-const followers = await followers_task;
-const following = await following_task;
+(async () => {
+  const username = await prompt_valid_username();
+  const user_id = await get_user_id(username);
+  console.log("Requesting followers");
+  const followers_task = get_list(config.followers, user_id);
+  console.log("Requesting following");
+  const following_task = get_list(config.following, user_id);
 
-not_followed_back = following.filter((user) => followers.indexOf(user) < 0);
-not_following_back = followers.filter((user) => following.indexOf(user) < 0);
-console.log(
-  `Not followed back (${not_followed_back.length}): ${not_followed_back}`
-);
-console.log(
-  `Not following back (${not_following_back.length}): ${not_following_back}`
-);
+  const followers = await followers_task;
+  const following = await following_task;
+
+  not_followed_back = following.filter((user) => followers.indexOf(user) < 0);
+  not_following_back = followers.filter((user) => following.indexOf(user) < 0);
+  console.log(
+    `Not followed back (${not_followed_back.length}): ${not_followed_back}`
+  );
+  console.log(
+    `Not following back (${not_following_back.length}): ${not_following_back}`
+  );
+})();
