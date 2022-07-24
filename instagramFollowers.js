@@ -44,7 +44,7 @@ const get_list = async (list_config, user_id) => {
     id: user_id,
     include_reel: true,
     fetch_mutual: true,
-    first: 50,
+    first: 50, // Maximum is 50
   };
   while (has_next) {
     url_params.after = after;
@@ -78,8 +78,7 @@ const prompt_valid_username = async () => {
   return username;
 };
 
-(async () => {
-  const username = await prompt_valid_username();
+const find_not_followed_and_following_back = async (username) => {
   const user_id = await get_user_id(username);
   console.log("Requesting followers");
   const followers_task = get_list(config.followers, user_id);
@@ -89,12 +88,25 @@ const prompt_valid_username = async () => {
   const followers = await followers_task;
   const following = await following_task;
 
-  not_followed_back = following.filter((user) => followers.indexOf(user) < 0);
-  not_following_back = followers.filter((user) => following.indexOf(user) < 0);
+  const not_followed_back = following.filter(
+    (user) => followers.indexOf(user) < 0
+  );
+  const not_following_back = followers.filter(
+    (user) => following.indexOf(user) < 0
+  );
+  return Promise.resolve({
+    not_followed_back: not_followed_back,
+    not_following_back: not_following_back,
+  });
+};
+
+(async () => {
+  const username = await prompt_valid_username();
+  const data = await find_not_followed_and_following_back(username);
   console.log(
-    `Not followed back (${not_followed_back.length}): ${not_followed_back}`
+    `Not followed back (${data.not_followed_back.length}): ${data.not_followed_back}`
   );
   console.log(
-    `Not following back (${not_following_back.length}): ${not_following_back}`
+    `Not following back (${data.not_following_back.length}): ${data.not_following_back}`
   );
 })();
