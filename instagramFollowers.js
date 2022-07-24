@@ -13,9 +13,16 @@ const config = {
 
 const get_user_id = async (username) => {
   console.log(`Fetching user id for @${username}`);
-  return fetch(`https://www.instagram.com/${username}/?__a=1`)
+  return fetch(
+    `https://i.instagram.com/api/v1/users/web_profile_info/?username=${username}`,
+    {
+      headers: {
+        "X-IG-App-ID": 936619743392459,
+      },
+    }
+  )
     .then((res) => res.json())
-    .then((res) => res.graphql.user.id);
+    .then((res) => res.data.user.id);
 };
 
 const get_list = async (list_config, user_id) => {
